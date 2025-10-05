@@ -1,0 +1,31 @@
+{
+  "name": "pfm-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.5.0",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
+    "dotenv": "^16.0.3",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.0.3",
+    "node-cron": "^4.2.1",
+    "pdfkit": "^0.17.2",
+    "react-chartjs-2": "^5.3.0",
+    "react-hot-toast": "^2.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "type": "module"
+}
