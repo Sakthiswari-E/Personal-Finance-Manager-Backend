@@ -5,12 +5,11 @@ dotenv.config();
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-/**
- *  Main Auth Middleware — Protects routes requiring authentication
- */
+
 export const authMiddleware = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+
+    const authHeader = req.headers["authorization"];
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
@@ -19,8 +18,10 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
+
     const token = authHeader.split(" ")[1];
 
+    
     if (!process.env.JWT_SECRET) {
       console.error("❌ Missing JWT_SECRET in environment variables");
       return res.status(500).json({
@@ -29,8 +30,10 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+  
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
       return res.status(401).json({
@@ -39,6 +42,7 @@ export const authMiddleware = async (req, res, next) => {
       });
     }
 
+ 
     req.user = user;
     next();
   } catch (err) {
@@ -53,9 +57,7 @@ export const authMiddleware = async (req, res, next) => {
   }
 };
 
-/**
- * Generate short-lived access token
- */
+
 export const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("Missing JWT_SECRET in environment variables");
@@ -63,9 +65,7 @@ export const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" });
 };
 
-/**
- *  Generate long-lived refresh token
- */
+
 export const generateRefreshToken = (id) => {
   if (!process.env.JWT_REFRESH_SECRET) {
     throw new Error("Missing JWT_REFRESH_SECRET in environment variables");
@@ -73,5 +73,5 @@ export const generateRefreshToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
 };
 
-//  Alias for backward compatibility
+
 export const protect = authMiddleware;

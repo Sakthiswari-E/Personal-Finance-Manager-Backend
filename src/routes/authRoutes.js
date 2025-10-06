@@ -4,22 +4,59 @@ import { generateToken, generateRefreshToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Refresh token endpoint
-router.post("/refresh", (req, res) => {
-  const { refreshToken } = req.body;
 
-  if (!refreshToken)
-    return res.status(401).json({ message: "No refresh token" });
-
+router.post("/refresh", async (req, res) => {
   try {
+    const { refreshToken } = req.body;
+
+
+    if (!refreshToken) {
+      return res
+        .status(401)
+        .json({ success: false, message: "No refresh token provided" });
+    }
+
+    if (!process.env.JWT_REFRESH_SECRET) {
+      console.error(" Missing JWT_REFRESH_SECRET in environment variables");
+      return res.status(500).json({
+        success: false,
+        message: "Server misconfiguration: missing refresh secret",
+      });
+    }
+
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
-    // Issue a new access token
-    const newAccessToken = generateToken(decoded.id);
+    if (!decoded || !decoded.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Invalid refresh token payload",
+      });
+    }
 
-    return res.json({ success: true, token: newAccessToken });
+    
+    const newAccessToken = generateToken(decoded.id);
+    const newRefreshToken = generateRefreshToken(decoded.id); 
+
+    return res.status(200).json({
+      success: true,
+      token: newAccessToken,
+      refreshToken: newRefreshToken, 
+      message: "Access token refreshed successfully",
+    });
   } catch (err) {
-    return res.status(403).json({ message: "Invalid refresh token" });
+    console.error(" Refresh token error:", err.message);
+
+    if (err.name === "TokenExpiredError") {
+      return res.status(403).json({
+        success: false,
+        message: "Refresh token expired. Please log in again.",
+      });
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: "Invalid refresh token",
+    });
   }
 });
 
