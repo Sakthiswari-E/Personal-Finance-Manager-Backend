@@ -11,7 +11,7 @@ console.log(
   process.env.JWT_REFRESH_SECRET ? " Found" : " Missing"
 );
 
-//  Safety check — stop startup if critical variables missing
+// Safety check — stop startup if critical variables missing
 if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
   console.error("Missing JWT secrets in .env file");
   process.exit(1);
@@ -40,8 +40,28 @@ import profileRoutes from "./src/routes/profile.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// ✅ Updated CORS configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://personalfinancemanager00.netlify.app",
+  "https://68e3301de3edf238d871c43a--personalfinancemanager00.netlify.app",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (e.g., mobile apps, curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Routes
@@ -54,11 +74,9 @@ app.use("/api/forecast", forecastRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/profile", profileRoutes);
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-
-//  Root route
+// Root route
 app.get("/", (req, res) => {
-  res.send(" Personal Finance Manager API is running");
+  res.send("Personal Finance Manager API is running");
 });
 
 // 404 fallback
