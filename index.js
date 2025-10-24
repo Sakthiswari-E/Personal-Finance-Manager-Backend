@@ -93,9 +93,8 @@ mongoose
     console.log("✅ MongoDB connected");
     await fixSettingsIndexes();
 
-    const PORT = DEV_MODE
-      ? DEFAULT_PORT
-      : await getPort({ port: DEFAULT_PORT });
+   const PORT = process.env.PORT || 5002;
+
 
     app.listen(PORT, () =>
       console.log(`🚀 Server running → http://localhost:${PORT}`)
