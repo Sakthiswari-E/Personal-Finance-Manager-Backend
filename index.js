@@ -5,7 +5,6 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import getPort from "get-port";
 
 // Routes
 import authRoutes from "./routes/auth.js";
@@ -16,45 +15,49 @@ import goalRoutes from "./routes/goals.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 
-
 import errorHandler from "./middleware/errorHandler.js";
 import Settings from "./models/Settings.js";
 
+// Start Notification Cron Jobs
+import "./cron/notificationCron.js";
+
 const app = express();
 
-//  Environment Variables
+// Environment Variables
 const DEV_MODE = process.env.DEV_MODE === "true";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const DEFAULT_PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5002;
 const MONGO_URI =
   process.env.MONGO_URI || "mongodb://127.0.0.1:27017/personal_finance_db";
 
-//  Global Middleware
+// Global Middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://personal-finance-manager-frontend-3jfx.onrender.com"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
-// Root route
+// Root Route
 app.get("/", (req, res) => {
   res.send("✅ Personal Finance Manager API is running!");
 });
 
-// Helpful API base route
+// Helpful API Base
 app.get("/api", (req, res) => {
   res.json({
-    message:
-      "✅ API is working. Try /api/auth/login or /api/expenses to continue.",
+    message: "✅ API is working. Try /api/auth/login or /api/expenses to continue."
   });
 });
 
-//  FIXED API ROUTES (now consistent ✅)
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
@@ -62,13 +65,11 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
-//  Start Notification Cron Jobs
-import "./cron/notificationCron.js";
 
-//  Error Handler
+// Error Handler
 app.use(errorHandler);
 
-//  Fix MongoDB index issue
+// Fix MongoDB index error
 async function fixSettingsIndexes() {
   try {
     const indexes = await Settings.collection.getIndexes({ full: true });
@@ -93,11 +94,8 @@ mongoose
     console.log("✅ MongoDB connected");
     await fixSettingsIndexes();
 
-   const PORT = process.env.PORT || 5002;
-
-
-    app.listen(PORT, () =>
-      console.log(`🚀 Server running → http://localhost:${PORT}`)
-    );
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
   })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
