@@ -9,28 +9,32 @@ const router = express.Router();
 
 /**
  * GET /api/expenses/filter
- * Filter expenses by date range
+ * Filter expenses by category + date range
  */
 router.get("/filter", protect, async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, category } = req.query;
 
     let query = { user: req.user._id };
 
-    // If start or end date provided
+    // Category filter
+    if (category) {
+      query.category = category;
+    }
+
+    // Date range filter
     if (startDate || endDate) {
       query.date = {};
-
       if (startDate) query.date.$gte = new Date(startDate);
       if (endDate) query.date.$lte = new Date(endDate);
     }
 
-    const filtered = await Expense.find(query).sort({ date: -1 });
+    const filteredExpenses = await Expense.find(query).sort({ date: -1 });
 
-    res.status(200).json(filtered);
+    res.status(200).json(filteredExpenses);
   } catch (err) {
     console.error("❌ Error filtering expenses:", err);
-    res.status(500).json({ message: "Server error fetching filtered expenses" });
+    res.status(500).json({ message: "Server error filtering expenses" });
   }
 });
 
@@ -40,7 +44,9 @@ router.get("/filter", protect, async (req, res) => {
  */
 router.get("/", protect, async (req, res) => {
   try {
-    const expenses = await Expense.find({ user: req.user._id }).sort({ date: -1 });
+    const expenses = await Expense.find({ user: req.user._id }).sort({
+      date: -1,
+    });
     res.status(200).json(expenses);
   } catch (err) {
     console.error("❌ Error fetching expenses:", err.message);
@@ -74,13 +80,19 @@ router.post("/", protect, async (req, res) => {
       const now = new Date();
       switch (req.body.recurrenceInterval) {
         case "daily":
-          req.body.nextRecurrenceDate = new Date(now.setDate(now.getDate() + 1));
+          req.body.nextRecurrenceDate = new Date(
+            now.setDate(now.getDate() + 1)
+          );
           break;
         case "weekly":
-          req.body.nextRecurrenceDate = new Date(now.setDate(now.getDate() + 7));
+          req.body.nextRecurrenceDate = new Date(
+            now.setDate(now.getDate() + 7)
+          );
           break;
         case "monthly":
-          req.body.nextRecurrenceDate = new Date(now.setMonth(now.getMonth() + 1));
+          req.body.nextRecurrenceDate = new Date(
+            now.setMonth(now.getMonth() + 1)
+          );
           break;
         default:
           req.body.nextRecurrenceDate = null;
@@ -111,7 +123,9 @@ router.put("/:id", protect, async (req, res) => {
     );
 
     if (!updated) {
-      return res.status(404).json({ message: "Expense not found or unauthorized" });
+      return res
+        .status(404)
+        .json({ message: "Expense not found or unauthorized" });
     }
 
     res.status(200).json(updated);
@@ -133,7 +147,9 @@ router.delete("/:id", protect, async (req, res) => {
     });
 
     if (!deleted) {
-      return res.status(404).json({ message: "Expense not found or unauthorized" });
+      return res
+        .status(404)
+        .json({ message: "Expense not found or unauthorized" });
     }
 
     res.status(200).json({ message: "Expense deleted successfully" });
