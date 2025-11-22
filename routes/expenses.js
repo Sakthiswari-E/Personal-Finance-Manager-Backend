@@ -4,12 +4,14 @@ import Expense from "../models/Expense.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { getExpenses } from "../controllers/expenseController.js";
 
-// Add this line:
 const router = express.Router();
-
 
 /**
  * GET /api/expenses/filter
+ * Apply filters: category + startDate + endDate
+ */
+/**
+ * POST /api/expenses/filter
  * Apply filters: category + startDate + endDate
  */
 router.post("/filter", protect, async (req, res) => {
@@ -27,15 +29,13 @@ router.post("/filter", protect, async (req, res) => {
     }
 
     const filtered = await Expense.find(query).sort({ date: -1 });
-    res.status(200).json(filtered);
 
+    res.status(200).json(filtered);
   } catch (err) {
     console.error("❌ Error filtering expenses:", err);
     res.status(500).json({ message: "Server error filtering expenses" });
   }
 });
-
-
 
 
 /**
