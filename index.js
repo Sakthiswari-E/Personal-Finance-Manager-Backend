@@ -64,7 +64,7 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/settings", settingsRoutes);
-app.use("/api/notifications", protect, notificationRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Error Handler
 app.use(errorHandler);
