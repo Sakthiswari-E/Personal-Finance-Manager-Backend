@@ -7,6 +7,37 @@ import { getExpenses } from "../controllers/expenseController.js";
 // Add this line:
 const router = express.Router();
 
+
+/**
+ * GET /api/expenses/filter
+ * Apply filters: category + startDate + endDate
+ */
+router.post("/filter", protect, async (req, res) => {
+  try {
+    const { category, startDate, endDate } = req.body;
+
+    let query = { user: req.user._id };
+
+    if (category) query.category = category;
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+
+    const filtered = await Expense.find(query).sort({ date: -1 });
+    res.status(200).json(filtered);
+
+  } catch (err) {
+    console.error("❌ Error filtering expenses:", err);
+    res.status(500).json({ message: "Server error filtering expenses" });
+  }
+});
+
+
+
+
 /**
  * GET /api/expenses
  *  Fetch only the logged-in user's expenses
