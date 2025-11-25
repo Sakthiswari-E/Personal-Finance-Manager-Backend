@@ -71,7 +71,7 @@ import RecurringBill from "../models/RecurringBill.js";
 import Goal from "../models/Goal.js";
 import { createNotification } from "../utils/notify.js";
 
-cron.schedule("0 9 * * *", async () => {
+cron.schedule("* * * * *", async () => {
   console.log("⏰ Notification Cron Running...");
 
   try {
@@ -79,10 +79,16 @@ cron.schedule("0 9 * * *", async () => {
     const budgets = await Budget.find();
 
     for (const budget of budgets) {
-      const total = await Expense.aggregate([
-        { $match: { user: budget.user, category: budget.category } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]);
+const total = await Expense.aggregate([
+  { 
+    $match: { 
+      userId: budget.userId,   // FIXED FIELD
+      category: budget.category 
+    } 
+  },
+  { $group: { _id: null, total: { $sum: "$amount" } } },
+]);
+
 
       const spent = total[0]?.total || 0;
       const percent = (spent / budget.limit) * 100;
