@@ -23,6 +23,7 @@ cron.schedule("* * * * *", async () => {
       const spent = total[0]?.total || 0;
       const percent = (spent / budget.limit) * 100;
 
+      // Get last notification for budget & category
       const recentNotif = await Notification.findOne({
         userId: budget.userId,
         type: "budget",
@@ -58,6 +59,7 @@ cron.schedule("* * * * *", async () => {
         `📅 Your ${bill.name} bill of ₹${bill.amount} is due today.`
       );
 
+      // Move due date by 1 month
       const next = new Date(bill.nextDueDate);
       next.setMonth(next.getMonth() + 1);
 
@@ -100,6 +102,7 @@ cron.schedule("* * * * *", async () => {
     console.error("❌ Cron Error:", error);
   }
 });
+
 
 // import cron from "node-cron";
 // import Budget from "../models/Budget.js";
