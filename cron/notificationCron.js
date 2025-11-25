@@ -98,76 +98,69 @@
 
 
 
-
+// backend/cron/notificationsCron.js
 import cron from "node-cron";
 import Budget from "../models/Budget.js";
 import Expense from "../models/Expense.js";
 import RecurringBill from "../models/RecurringBill.js";
 import Goal from "../models/Goal.js";
-import Notification from "../models/Notification.js";   // REQUIRED
 import { createNotification } from "../utils/notify.js";
 
-// Runs every day at 9 AM
-cron.schedule("0 9 * * *", async () => {
+cron.schedule("* * * * *", async () => {
   console.log("⏰ Notification Cron Running...");
 
   try {
-    /* -----------------------------------------------------
-     *                 B U D G E T   A L E R T S
-     * ----------------------------------------------------- */
+    /* ------------------------------------------------
+       🔔 BUDGET ALERTS
+    ------------------------------------------------ */
     const budgets = await Budget.find();
 
     for (const budget of budgets) {
-      // FIX: Your expense schema uses userId (not user)
+      // Get total spent for that user + category
       const total = await Expense.aggregate([
         {
           $match: {
-            userId: budget.userId,     // FIXED
-            category: budget.category
+            userId: budget.userId,   // MUST BE userId
+            category: budget.category,
           }
         },
-        {
-          $group: { _id: null, total: { $sum: "$amount" } }
-        }
+        { $group: { _id: null, total: { $sum: "$amount" } } }
       ]);
 
       const spent = total[0]?.total || 0;
-
-      // FIX: Budget limit field (your model uses "limit")
       const percent = (spent / budget.limit) * 100;
 
-      /* ---- Prevent Duplicates ---- */
-      const exceededMsg = `⚠️ You exceeded your budget for ${budget.category}!`;
-      const eightyMsg = `⚠️ You have used 80% of your ${budget.category} budget.`;
+      /* ---- Prevent Duplicate Notifications ---- */
+      const recentNotif = await Notification.findOne({
+        user: budget.userId,
+        type: "budget",
+        message: { $regex: budget.category, $options: "i" }
+      }).sort({ createdAt: -1 });
 
-      if (percent >= 100) {
-        const exists = await Notification.findOne({
-          userId: budget.userId,
-          type: "budget",
-          message: exceededMsg
-        });
+      const already80 = recentNotif?.message.includes("80%");
+      const already100 = recentNotif?.message.includes("exceeded");
 
-        if (!exists) {
-          await createNotification(budget.userId, "budget", exceededMsg);
-        }
-
-      } else if (percent >= 80) {
-        const exists = await Notification.findOne({
-          userId: budget.userId,
-          type: "budget",
-          message: eightyMsg
-        });
-
-        if (!exists) {
-          await createNotification(budget.userId, "budget", eightyMsg);
-        }
+      /* ---- Check Conditions ---- */
+      if (percent >= 100 && !already100) {
+        await createNotification(
+          budget.userId,
+          "budget",
+          `⚠️ You exceeded your budget for ${budget.category}!`
+        );
+      } else if (percent >= 80 && !already80 && percent < 100) {
+        await createNotification(
+          budget.userId,
+          "budget",
+          `⚠️ You have used 80% of your ${budget.category} budget.`
+        );
       }
     }
 
-    /* -----------------------------------------------------
-     *                  B I L L   D U E
-     * ----------------------------------------------------- */
+    /* ------------------------------------------------
+       📅 BILL DUE TODAY
+    ------------------------------------------------ */
     const today = new Date().toISOString().split("T")[0];
+
     const dueBills = await RecurringBill.find({ nextDueDate: today });
 
     for (const bill of dueBills) {
@@ -177,49 +170,47 @@ cron.schedule("0 9 * * *", async () => {
         `📅 Your ${bill.name} bill of ₹${bill.amount} is due today.`
       );
 
-      // Move next due date 1 month ahead
+      // Move date by 1 month
       const next = new Date(bill.nextDueDate);
       next.setMonth(next.getMonth() + 1);
+
       bill.nextDueDate = next;
       await bill.save();
     }
 
-    /* -----------------------------------------------------
-     *                G O A L   P R O G R E S S
-     * ----------------------------------------------------- */
+    /* ------------------------------------------------
+       🎯 GOAL PROGRESS
+    ------------------------------------------------ */
     const goals = await Goal.find();
 
     for (const goal of goals) {
       const percent = (goal.saved / goal.target) * 100;
 
-      const eightyGoalMsg = `🔥 You reached 80% of your goal: ${goal.name}`;
-      const doneGoalMsg = `🎯 Goal Achieved! You reached: ${goal.name}`;
+      const recentGoalNotif = await Notification.findOne({
+        user: goal.user,
+        type: "goal",
+        message: { $regex: goal.name, $options: "i" }
+      }).sort({ createdAt: -1 });
 
-      if (percent >= 100) {
-        const exists = await Notification.findOne({
-          userId: goal.user,
-          type: "goal",
-          message: doneGoalMsg
-        });
+      const already80 = recentGoalNotif?.message.includes("80%");
+      const already100 = recentGoalNotif?.message.includes("Achieved");
 
-        if (!exists) {
-          await createNotification(goal.user, "goal", doneGoalMsg);
-        }
-
-      } else if (percent >= 80) {
-        const exists = await Notification.findOne({
-          userId: goal.user,
-          type: "goal",
-          message: eightyGoalMsg
-        });
-
-        if (!exists) {
-          await createNotification(goal.user, "goal", eightyGoalMsg);
-        }
+      if (percent >= 100 && !already100) {
+        await createNotification(
+          goal.user,
+          "goal",
+          `🎯 Goal Achieved! You reached: ${goal.name}`
+        );
+      } else if (percent >= 80 && percent < 100 && !already80) {
+        await createNotification(
+          goal.user,
+          "goal",
+          `🔥 You reached 80% of your goal: ${goal.name}`
+        );
       }
     }
 
-    console.log("✅ Notification Cron Finished Successfully!");
+    console.log("✅ Notification Cron Finished!");
   } catch (error) {
     console.error("❌ Cron Error:", error);
   }
