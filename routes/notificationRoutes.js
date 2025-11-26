@@ -1,6 +1,4 @@
-// backend/routes/notifications.js
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
 import {
   getNotifications,
   markAsRead,
@@ -8,6 +6,7 @@ import {
   deleteNotification,
   deleteAllNotifications,
 } from "../controllers/notificationController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
