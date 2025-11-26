@@ -16,6 +16,8 @@ const notificationSchema = new mongoose.Schema({
   isRead: { type: Boolean, default: false },
 }, { timestamps: true });
 
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
+
 export default mongoose.model("Notification", notificationSchema);
 
 // //backend\models\Notification.js
