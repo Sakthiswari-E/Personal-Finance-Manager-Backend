@@ -1,41 +1,41 @@
-import express from "express";
-import {
-  getNotifications,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification,
-  deleteAllNotifications,
-} from "../controllers/notificationController.js";
-import { protect } from "../middleware/authMiddleware.js";
-
-const router = express.Router();
-
-router.get("/", protect, getNotifications);
-router.patch("/:id/read", protect, markAsRead);
-router.patch("/mark-all", protect, markAllAsRead);
-router.delete("/:id", protect, deleteNotification);
-router.delete("/", protect, deleteAllNotifications);
-
-export default router;
-
 // import express from "express";
-// import { protect } from "../middleware/authMiddleware.js";
-
 // import {
 //   getNotifications,
 //   markAsRead,
-//   deleteNotification,
 //   markAllAsRead,
+//   deleteNotification,
+//   deleteAllNotifications,
 // } from "../controllers/notificationController.js";
+// import { protect } from "../middleware/authMiddleware.js";
 
 // const router = express.Router();
 
 // router.get("/", protect, getNotifications);
-// router.put("/:id/read", protect, markAsRead);
-// router.put("/mark-all", protect, markAllAsRead);
+// router.patch("/:id/read", protect, markAsRead);
+// router.patch("/mark-all", protect, markAllAsRead);
 // router.delete("/:id", protect, deleteNotification);
+// router.delete("/", protect, deleteAllNotifications);
 
 // export default router;
+
+import express from "express";
+import { protect } from "../middleware/authMiddleware.js";
+
+import {
+  getNotifications,
+  markAsRead,
+  deleteNotification,
+  markAllAsRead,
+} from "../controllers/notificationController.js";
+
+const router = express.Router();
+
+router.get("/", protect, getNotifications);
+router.put("/:id/read", protect, markAsRead);
+router.put("/mark-all", protect, markAllAsRead);
+router.delete("/:id", protect, deleteNotification);
+
+export default router;
 
 // import express from "express";
 // import Notification from "../models/Notification.js";
