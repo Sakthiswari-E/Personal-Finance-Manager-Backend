@@ -25,9 +25,9 @@ cron.schedule("* * * * *", async () => {
       const percent = (spent / budget.amount) * 100;
 
       const recentNotif = await Notification.findOne({
-        user: budget.user,
+        userId: budget.user,    // ✅ FIXED
         type: "budget",
-        message: { $regex: budget.category, $options: "i" },
+        message: { $regex: budget.category, $options: "i" }
       }).sort({ createdAt: -1 });
 
       const already80 = recentNotif?.message.includes("80%");
@@ -57,9 +57,9 @@ cron.schedule("* * * * *", async () => {
       const percent = (goal.saved / goal.target) * 100;
 
       const recentGoalNotif = await Notification.findOne({
-        user: goal.user,
+        userId: goal.user,    // ✅ FIXED
         type: "goal",
-        message: { $regex: goal.name, $options: "i" },
+        message: { $regex: goal.name, $options: "i" }
       }).sort({ createdAt: -1 });
 
       const already80 = recentGoalNotif?.message.includes("80%");
@@ -85,6 +85,7 @@ cron.schedule("* * * * *", async () => {
     console.error("❌ Cron Error:", error);
   }
 });
+
 
 
 

@@ -1,7 +1,9 @@
 // backend/utils/notify.js
 import Notification from "../models/Notification.js";
 
+// export const createNotification = async (userId, type, message) => {
 export const createNotification = async (userId, type, message) => {
+
   try {
     // Prevent duplicates within last 2 hours
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
