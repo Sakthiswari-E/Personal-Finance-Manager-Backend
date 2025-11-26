@@ -1,4 +1,3 @@
-// //backend\controllers\expenseController.js
 // backend/controllers/expenseController.js
 
 import Expense from "../models/Expense.js";
