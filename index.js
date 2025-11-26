@@ -20,6 +20,7 @@ import Settings from "./models/Settings.js";
 
 // Start Notification Cron Jobs
 import "./cron/notificationCron.js";
+import "./cron/recurringCron.js";
 
 const app = express();
 

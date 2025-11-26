@@ -8,32 +8,45 @@ export const addExpense = async (req, res) => {
     const { category, amount, isRecurring } = req.body;
     const userId = req.user.id;
 
-    // Create expense
+    // 1️⃣ Create new expense
     const expense = new Expense({ ...req.body, user: userId });
     await expense.save();
 
+    // 2️⃣ Update budget if exists
     const budget = await Budget.findOne({ user: userId, category });
     if (budget) {
       budget.spent = (budget.spent || 0) + Number(amount);
       await budget.save();
     }
 
+    // 3️⃣ Handle recurring logic
     if (isRecurring) {
+      const nextDate = new Date();
+      nextDate.setMonth(nextDate.getMonth() + 1);
+
+      expense.nextRecurringDate = nextDate;
+      await expense.save();
+
+      // 4️⃣ Notification for recurring expense
       await Notification.create({
         user: userId,
         message: `Recurring expense added: ${category} - ₹${amount}`,
       });
     }
-    
+
+    // 5️⃣ Final response
     return res.status(201).json(expense);
+
   } catch (err) {
     console.error("🔥 Error adding expense:", err);
+
     return res.status(500).json({
       message: "Server error",
       error: err.message,
     });
   }
 };
+
 
 export const createExpense = async (req, res) => {
   try {

@@ -1,33 +1,68 @@
+// import mongoose from "mongoose";
+
+// const recurringBillSchema = new mongoose.Schema({
+//   userId: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: "User",
+//     required: true,
+//   },
+
+//   name: {
+//     type: String,
+//     required: true,
+//   },
+
+//   amount: {
+//     type: Number,
+//     required: true,
+//   },
+
+
+//   dueDate: {
+//     type: String,
+//     required: true,
+//   },
+
+
+//   nextDueDate: {
+//     type: String,
+//     required: true,
+//   },
+// });
+
 import mongoose from "mongoose";
 
-const recurringBillSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const recurringExpenseSchema = new mongoose.Schema({
+  user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
   },
 
-  name: {
-    type: String,
-    required: true,
+  category: { 
+    type: String, 
+    required: true 
   },
 
-  amount: {
-    type: Number,
-    required: true,
+  amount: { 
+    type: Number, 
+    required: true 
   },
 
-
-  dueDate: {
-    type: String,
-    required: true,
+  isRecurring: { 
+    type: Boolean, 
+    default: false 
   },
 
+  recurringEvery: { 
+    type: String, 
+    enum: ["monthly"], 
+    default: "monthly" 
+  },
 
-  nextDueDate: {
-    type: String,
-    required: true,
+  nextRecurringDate: { 
+    type: Date 
   },
 });
 
-export default mongoose.model("RecurringBill", recurringBillSchema);
+export default mongoose.model("RecurringExpense", recurringExpenseSchema);
