@@ -5,26 +5,35 @@ import Budget from "../models/Budget.js";
 
 export const addExpense = async (req, res) => {
   try {
-    const { category, amount } = req.body;
+    const { category, amount, isRecurring } = req.body;
     const userId = req.user.id;
 
+    // Create expense
     const expense = new Expense({ ...req.body, user: userId });
     await expense.save();
 
-    // 🔁 Update matching budget if it exists
     const budget = await Budget.findOne({ user: userId, category });
     if (budget) {
       budget.spent = (budget.spent || 0) + Number(amount);
       await budget.save();
     }
 
-    res.status(201).json(expense);
+    if (isRecurring) {
+      await Notification.create({
+        user: userId,
+        message: `Recurring expense added: ${category} - ₹${amount}`,
+      });
+    }
+    
+    return res.status(201).json(expense);
   } catch (err) {
     console.error("🔥 Error adding expense:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
-
 
 export const createExpense = async (req, res) => {
   try {
