@@ -35,10 +35,7 @@ export const getSummary = async (req, res) => {
     const filter = getUserFilter(req);
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
-    const { start, end } = parseDateRange(
-      req.query.startDate,
-      req.query.endDate
-    );
+    const { start, end } = parseDateRange(req.query.startDate, req.query.endDate);
     if (start || end) {
       filter.date = {};
       if (start) filter.date.$gte = start;
@@ -51,15 +48,11 @@ export const getSummary = async (req, res) => {
     ]);
     const totalExpenses = totalAgg[0]?.total || 0;
 
-    // 📌 Generate dynamic 6-month trend ending with current month
+    
     const now = new Date();
-
-    // Start from 5 months ago (6 months total)
-    const startMonth = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-
-    // Aggregate expenses month-wise
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const trendAgg = await Expense.aggregate([
-      { $match: { ...filter, date: { $gte: startMonth } } },
+      { $match: { ...filter, date: { $gte: sixMonthsAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m", date: "$date" } },
@@ -69,23 +62,15 @@ export const getSummary = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // Build last 6 months including the current month
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       months.push(`${d.getFullYear()}-${mm}`);
     }
-
-    // Create lookup map from aggregated results
     const trendMap = {};
     trendAgg.forEach((t) => (trendMap[t._id] = t.total));
-
-    // Final trend format → MATCHES FRONTEND
-    const trend = months.map((m) => ({
-      month: m,
-      value: trendMap[m] || 0,
-    }));
+    const trend = months.map((m) => ({ date: m, total: trendMap[m] || 0 }));
 
     const categoriesAgg = await Expense.aggregate([
       { $match: filter },
@@ -97,10 +82,7 @@ export const getSummary = async (req, res) => {
       amount: c.total,
     }));
 
-    const recentDocs = await Expense.find(filter)
-      .sort({ date: -1 })
-      .limit(5)
-      .lean();
+    const recentDocs = await Expense.find(filter).sort({ date: -1 }).limit(5).lean();
     const items = recentDocs.map((r) => ({
       id: r._id,
       date: r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
@@ -116,15 +98,13 @@ export const getSummary = async (req, res) => {
   }
 };
 
+
 export const getExpenseReport = async (req, res) => {
   try {
     const filter = getUserFilter(req);
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
-    const { start, end } = parseDateRange(
-      req.query.startDate,
-      req.query.endDate
-    );
+    const { start, end } = parseDateRange(req.query.startDate, req.query.endDate);
     if (start || end) {
       filter.date = {};
       if (start) filter.date.$gte = start;
@@ -132,10 +112,7 @@ export const getExpenseReport = async (req, res) => {
     }
     if (req.query.category) filter.category = req.query.category;
 
-    const items = await Expense.find(filter)
-      .sort({ date: -1 })
-      .limit(100)
-      .lean();
+    const items = await Expense.find(filter).sort({ date: -1 }).limit(100).lean();
 
     const byCategoryAgg = await Expense.aggregate([
       { $match: filter },
@@ -148,16 +125,12 @@ export const getExpenseReport = async (req, res) => {
     }));
 
     const now = new Date();
-    const startDate =
-      start || new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+    const startDate = start || new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
     startDate.setHours(0, 0, 0, 0);
     const endDate = end || new Date();
     endDate.setHours(23, 59, 59, 999);
 
-    const matchForDaily = {
-      ...filter,
-      date: { $gte: startDate, $lte: endDate },
-    };
+    const matchForDaily = { ...filter, date: { $gte: startDate, $lte: endDate } };
     const dailyAgg = await Expense.aggregate([
       { $match: matchForDaily },
       {
@@ -206,15 +179,7 @@ export const getBudgetReport = async (req, res) => {
       } else {
         // monthly (default)
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-          999
-        );
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       }
 
       const match = {
@@ -234,9 +199,7 @@ export const getBudgetReport = async (req, res) => {
     const result = budgets.map((b) => {
       const spent = spentMap[b.category] || 0;
       const remaining = Math.max(0, b.amount - spent);
-      const percentUsed = b.amount
-        ? Math.min(100, Math.round((spent / b.amount) * 100))
-        : 0;
+      const percentUsed = b.amount ? Math.min(100, Math.round((spent / b.amount) * 100)) : 0;
 
       return {
         _id: b._id,
