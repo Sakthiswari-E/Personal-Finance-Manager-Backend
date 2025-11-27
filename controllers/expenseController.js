@@ -13,7 +13,9 @@ export const addExpense = async (req, res) => {
     const userId = req.user.id;
 
     if (!category || !amount) {
-      return res.status(400).json({ message: "Category and amount are required" });
+      return res
+        .status(400)
+        .json({ message: "Category and amount are required" });
     }
 
     // 1️⃣ Create expense
@@ -22,29 +24,59 @@ export const addExpense = async (req, res) => {
 
     // 2️⃣ Find matching budget
     const budget = await Budget.findOne({ user: userId, category });
-
     if (budget) {
-      budget.spent = (budget.spent || 0) + Number(amount);
+      budget.spentThisPeriod = (budget.spentThisPeriod || 0) + Number(amount);
+      budget.percentUsed = Math.round(
+        (budget.spentThisPeriod / budget.amount) * 100
+      );
       await budget.save();
 
-      const percent = (budget.spent / budget.amount) * 100;
+      const percent = budget.percentUsed;
 
-      // ⚠️ 80% Alert
       if (percent >= 80 && percent < 100) {
         await Notification.create({
           user: userId,
-          message: `⚠️ You have used ${Math.floor(percent)}% of your ${category} budget.`,
+          type: "budget",
+          message: `⚠️ You have used ${percent}% of your ${category} budget.`,
         });
       }
 
-      // 🚨 100% Alert
       if (percent >= 100) {
         await Notification.create({
           user: userId,
+          type: "budget",
           message: `🚨 You exceeded your ${category} budget!`,
         });
       }
     }
+
+    // if (budget) {
+    //   budget.spentThisPeriod = (budget.spentThisPeriod || 0) + Number(amount);
+    //   budget.percentUsed = Math.round(
+    //     (budget.spentThisPeriod / budget.amount) * 100
+    //   );
+    //   await budget.save();
+
+    //   const percent = budget.percentUsed;
+
+    //   // ⚠️ 80% Alert
+    //   if (percent >= 80 && percent < 100) {
+    //     await Notification.create({
+    //       user: userId,
+    //       message: `⚠️ You have used ${Math.floor(
+    //         percent
+    //       )}% of your ${category} budget.`,
+    //     });
+    //   }
+
+    //   // 🚨 100% Alert
+    //   if (percent >= 100) {
+    //     await Notification.create({
+    //       user: userId,
+    //       message: `🚨 You exceeded your ${category} budget!`,
+    //     });
+    //   }
+    // }
 
     // 3️⃣ Recurring Expense
     if (isRecurring) {
@@ -61,10 +93,11 @@ export const addExpense = async (req, res) => {
     }
 
     return res.status(201).json(expense);
-
   } catch (err) {
     console.error("🔥 Error adding expense:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: err.message });
   }
 };
 
@@ -73,11 +106,15 @@ export const addExpense = async (req, res) => {
 // ----------------------------------------------------
 export const getExpenses = async (req, res) => {
   try {
-    const expenses = await Expense.find({ user: req.user.id }).sort({ date: -1 });
+    const expenses = await Expense.find({ user: req.user.id }).sort({
+      date: -1,
+    });
     return res.status(200).json(expenses);
   } catch (err) {
     console.error("🔥 Error fetching expenses:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: err.message });
   }
 };
 
@@ -86,14 +123,20 @@ export const getExpenses = async (req, res) => {
 // ----------------------------------------------------
 export const deleteExpense = async (req, res) => {
   try {
-    const expense = await Expense.findOne({ _id: req.params.id, user: req.user.id });
+    const expense = await Expense.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
 
     if (!expense) {
       return res.status(404).json({ message: "Expense not found" });
     }
 
     // rollback budget
-    const budget = await Budget.findOne({ user: req.user.id, category: expense.category });
+    const budget = await Budget.findOne({
+      user: req.user.id,
+      category: expense.category,
+    });
     if (budget) {
       budget.spent = Math.max(0, budget.spent - expense.amount);
       await budget.save();
@@ -102,10 +145,11 @@ export const deleteExpense = async (req, res) => {
     await expense.deleteOne();
 
     return res.status(200).json({ message: "Expense deleted" });
-
   } catch (err) {
     console.error("🔥 Error deleting expense:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: err.message });
   }
 };
 
@@ -114,7 +158,10 @@ export const deleteExpense = async (req, res) => {
 // ----------------------------------------------------
 export const updateExpense = async (req, res) => {
   try {
-    const expense = await Expense.findOne({ _id: req.params.id, user: req.user.id });
+    const expense = await Expense.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
 
     if (!expense) {
       return res.status(404).json({ message: "Expense not found" });
@@ -151,10 +198,11 @@ export const updateExpense = async (req, res) => {
     }
 
     return res.status(200).json(expense);
-
   } catch (err) {
     console.error("🔥 Error updating expense:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: err.message });
   }
 };
 
@@ -192,7 +240,10 @@ export const processRecurringExpenses = async () => {
       });
 
       // update budget
-      const budget = await Budget.findOne({ user: exp.user, category: exp.category });
+      const budget = await Budget.findOne({
+        user: exp.user,
+        category: exp.category,
+      });
       if (budget) {
         budget.spent += Number(exp.amount);
         await budget.save();
@@ -200,7 +251,6 @@ export const processRecurringExpenses = async () => {
     }
 
     console.log("✅ Recurring expenses processed.");
-
   } catch (err) {
     console.error("🔥 Error processing recurring expenses:", err);
   }
@@ -253,7 +303,6 @@ export const processRecurringExpenses = async () => {
 //     });
 //   }
 // };
-
 
 // export const createExpense = async (req, res) => {
 //   try {
@@ -359,10 +408,6 @@ export const processRecurringExpenses = async () => {
 //     res.status(500).json({ message: "Server error updating expense" });
 //   }
 // };
-
-
-
-
 
 // export const deleteExpense = async (req, res) => {
 //   try {
