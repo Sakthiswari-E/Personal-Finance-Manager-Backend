@@ -25,7 +25,7 @@ cron.schedule("0 * * * *", async () => {
         await createNotification(
           userId,
           "budget",
-          `${budget.category} budget is ${percent}% used`
+          `⚠️ ${budget.category} budget is ${percent}% used`
         );
       }
 
@@ -33,7 +33,7 @@ cron.schedule("0 * * * *", async () => {
         await createNotification(
           userId,
           "budget",
-          `${budget.category} budget exceeded!`
+          `🎯 ${budget.category} budget exceeded!`
         );
       }
     }
