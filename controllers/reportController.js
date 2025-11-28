@@ -30,77 +30,179 @@ function parseDateRange(startQ, endQ) {
   return { start, end };
 }
 
+// export const getSummary = async (req, res) => {
+//   try {
+//     const filter = getUserFilter(req);
+//     if (!filter) return res.status(401).json({ error: "Unauthorized" });
+
+//     const { start, end } = parseDateRange(
+//       req.query.startDate,
+//       req.query.endDate
+//     );
+//     if (start || end) {
+//       filter.date = {};
+//       if (start) filter.date.$gte = start;
+//       if (end) filter.date.$lte = end;
+//     }
+
+//     const totalAgg = await Expense.aggregate([
+//       { $match: filter },
+//       { $group: { _id: null, total: { $sum: "$amount" } } },
+//     ]);
+//     const totalExpenses = totalAgg[0]?.total || 0;
+
+//     const now = new Date();
+//     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+//     const trendAgg = await Expense.aggregate([
+//       { $match: { ...filter, date: { $gte: sixMonthsAgo } } },
+//       {
+//         $group: {
+//           _id: { $dateToString: { format: "%Y-%m", date: "$date" } },
+//           total: { $sum: "$amount" },
+//         },
+//       },
+//       { $sort: { _id: 1 } },
+//     ]);
+
+//     const months = [];
+//     for (let i = 5; i >= 0; i--) {
+//       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+//       const mm = String(d.getMonth() + 1).padStart(2, "0");
+//       months.push(`${d.getFullYear()}-${mm}`);
+//     }
+//     const trendMap = {};
+//     trendAgg.forEach((t) => (trendMap[t._id] = t.total));
+//     const trend = months.map((m) => ({ date: m, total: trendMap[m] || 0 }));
+
+//     const categoriesAgg = await Expense.aggregate([
+//       { $match: filter },
+//       { $group: { _id: "$category", total: { $sum: "$amount" } } },
+//       { $sort: { total: -1 } },
+//     ]);
+//     const byCategory = categoriesAgg.map((c) => ({
+//       category: c._id || "Uncategorized",
+//       amount: c.total,
+//     }));
+
+//     const recentDocs = await Expense.find(filter)
+//       .sort({ date: -1 })
+//       .limit(5)
+//       .lean();
+//     const items = recentDocs.map((r) => ({
+//       id: r._id,
+//       date: r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
+//       category: r.category,
+//       description: r.description || "",
+//       amount: r.amount,
+//     }));
+
+//     res.json({
+//       summary: {
+//         totalExpenses,
+//         dailyTrend: trend,
+//         byCategory,
+//         items,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("getSummary error:", err);
+//     res.status(500).json({ error: "Failed to fetch summary" });
+//   }
+// };
 export const getSummary = async (req, res) => {
   try {
     const filter = getUserFilter(req);
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
-    const { start, end } = parseDateRange(
-      req.query.startDate,
-      req.query.endDate
-    );
-    if (start || end) {
-      filter.date = {};
-      if (start) filter.date.$gte = start;
-      if (end) filter.date.$lte = end;
-    }
-
+    // -----------------------------------------------------
+    // TOTAL EXPENSES
+    // -----------------------------------------------------
     const totalAgg = await Expense.aggregate([
       { $match: filter },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
     const totalExpenses = totalAgg[0]?.total || 0;
 
+    // -----------------------------------------------------
+    // DAILY EXPENSE TREND (last 6 months)
+    // -----------------------------------------------------
     const now = new Date();
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const sixMonthsAgo = new Date(
+      now.getFullYear(),
+      now.getMonth() - 5,
+      now.getDate()
+    );
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
     const trendAgg = await Expense.aggregate([
-      { $match: { ...filter, date: { $gte: sixMonthsAgo } } },
+      {
+        $match: {
+          ...filter,
+          date: { $gte: sixMonthsAgo },
+        },
+      },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m", date: "$date" } },
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
           total: { $sum: "$amount" },
         },
       },
       { $sort: { _id: 1 } },
     ]);
 
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      months.push(`${d.getFullYear()}-${mm}`);
-    }
+    // Map results
     const trendMap = {};
     trendAgg.forEach((t) => (trendMap[t._id] = t.total));
-    const trend = months.map((m) => ({ date: m, total: trendMap[m] || 0 }));
 
+    const dailyTrend = [];
+    let cur = new Date(sixMonthsAgo);
+
+    while (cur <= now) {
+      const key = cur.toISOString().slice(0, 10);
+      dailyTrend.push({
+        date: key,
+        total: trendMap[key] || 0,
+      });
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    // -----------------------------------------------------
+    // CATEGORY SUMMARY (Pie Chart)
+    // -----------------------------------------------------
     const categoriesAgg = await Expense.aggregate([
       { $match: filter },
       { $group: { _id: "$category", total: { $sum: "$amount" } } },
       { $sort: { total: -1 } },
     ]);
+
     const byCategory = categoriesAgg.map((c) => ({
       category: c._id || "Uncategorized",
       amount: c.total,
     }));
 
+    // -----------------------------------------------------
+    // RECENT TRANSACTIONS
+    // -----------------------------------------------------
     const recentDocs = await Expense.find(filter)
       .sort({ date: -1 })
       .limit(5)
       .lean();
+
     const items = recentDocs.map((r) => ({
       id: r._id,
-      date: r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
+      date: r.date ? r.date.toISOString().slice(0, 10) : "",
       category: r.category,
       description: r.description || "",
       amount: r.amount,
     }));
 
-    // res.json({ summary: { totalExpenses }, trend, byCategory, items });
+    // -----------------------------------------------------
+    // SEND RESPONSE
+    // -----------------------------------------------------
     res.json({
       summary: {
         totalExpenses,
-        dailyTrend: trend,
+        dailyTrend,
         byCategory,
         items,
       },
@@ -188,7 +290,6 @@ export const getBudgetReport = async (req, res) => {
 
     const budgets = await Budget.find(filter).lean();
 
-    // Map for spending by category this period
     const spentMap = {};
 
     for (const budget of budgets) {
@@ -199,7 +300,6 @@ export const getBudgetReport = async (req, res) => {
         startDate = new Date(now.getFullYear(), 0, 1);
         endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
       } else {
-        // monthly (default)
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(
           now.getFullYear(),

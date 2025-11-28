@@ -1,7 +1,7 @@
 // backend/controllers/goalController.js
 import Goal from "../models/Goal.js";
 
-// ✅ Create a new goal
+//  Create a new goal
 export const createGoal = async (req, res) => {
   try {
     const { name, target, saved = 0, category, startDate, endDate } = req.body;
@@ -27,7 +27,7 @@ export const createGoal = async (req, res) => {
   }
 };
 
-// ✅ Get all goals (for the logged-in user)
+// Get all goals (for the logged-in user)
 export const getGoals = async (req, res) => {
   try {
     const filter = process.env.DEV_MODE === "true" ? {} : { user: req.user?._id };
@@ -39,7 +39,7 @@ export const getGoals = async (req, res) => {
   }
 };
 
-// ✅ Update a goal by ID
+//  Update a goal by ID
 export const updateGoal = async (req, res) => {
   try {
     const updated = await Goal.findOneAndUpdate(
@@ -59,7 +59,7 @@ export const updateGoal = async (req, res) => {
   }
 };
 
-// ✅ Delete a goal by ID
+// Delete a goal by ID
 export const deleteGoal = async (req, res) => {
   try {
     const deleted = await Goal.findOneAndDelete({

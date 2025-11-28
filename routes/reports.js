@@ -10,20 +10,9 @@ import PDFTable from "pdfkit-table";
 
 const router = express.Router();
 
-/**
- *  Dashboard Summary Route
- */
 router.get("/summary", protect, getSummary);
-
-/**
- *  Expense and Budget Reports
- */
 router.get("/expenses", protect, getExpenseReport);
 router.get("/budgets", protect, getBudgetReport);
-
-/**
- *  Income Report
- */
 router.get("/income", protect, async (req, res) => {
   try {
     const incomes = await Expense.find({ user: req.user._id, type: "income" }).lean();
@@ -82,7 +71,7 @@ router.get("/export/csv", protect, async (req, res) => {
 
 
 /**
- * PDF Export (Clean Format with Footer)
+ * PDF Export
  */
 router.get("/export/pdf", protect, async (req, res) => {
   try {

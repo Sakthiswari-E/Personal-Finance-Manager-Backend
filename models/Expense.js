@@ -8,7 +8,6 @@ const expenseSchema = new mongoose.Schema({
   description: { type: String },
   date: { type: Date, default: Date.now },
  
-  //  Recurring logic
   isRecurring: { type: Boolean, default: false },
   recurrenceInterval: {
     type: String,

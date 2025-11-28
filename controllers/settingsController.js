@@ -1,7 +1,7 @@
 // backend/controllers/settingsController.js
 import Settings from "../models/Settings.js";
 
-// ✅ Get current user's settings
+//  Get current user's settings
 export const getSettings = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -26,7 +26,7 @@ export const getSettings = async (req, res) => {
   }
 };
 
-// ✅ Update user settings
+//  Update user settings
 export const updateSettings = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -39,7 +39,7 @@ export const updateSettings = async (req, res) => {
     );
 
     res.json({
-      message: "✅ Settings updated successfully!",
+      message: "Settings updated successfully!",
       settings: updated,
     });
   } catch (err) {

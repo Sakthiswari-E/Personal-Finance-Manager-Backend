@@ -5,14 +5,6 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * GET /api/expenses/filter
- * Apply filters: category + startDate + endDate
- */
-/**
- * POST /api/expenses/filter
- * Apply filters: category + startDate + endDate
- */
 router.post("/filter", protect, async (req, res) => {
   try {
     const { category, startDate, endDate } = req.body;
@@ -36,11 +28,6 @@ router.post("/filter", protect, async (req, res) => {
   }
 });
 
-
-/**
- * GET /api/expenses
- *  Fetch only the logged-in user's expenses
- */
 router.get("/", protect, async (req, res) => {
   try {
     const expenses = await Expense.find({ user: req.user._id }).sort({ date: -1 });
@@ -51,12 +38,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-/**
- * POST /api/expenses
- *  Create a new expense for the logged-in user
- * Handles recurring expense logic
- * DEV_MODE fallback for testing
- */
+
 router.post("/", protect, async (req, res) => {
   try {
     const { amount, category } = req.body;
@@ -101,10 +83,6 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-/**
- * PUT /api/expenses/:id
- *  Update an existing expense (only if it belongs to the user)
- */
 router.put("/:id", protect, async (req, res) => {
   try {
     const updated = await Expense.findOneAndUpdate(
@@ -124,10 +102,6 @@ router.put("/:id", protect, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/expenses/:id
- *  Delete expense only if it belongs to the user
- */
 router.delete("/:id", protect, async (req, res) => {
   try {
     const deleted = await Expense.findOneAndDelete({

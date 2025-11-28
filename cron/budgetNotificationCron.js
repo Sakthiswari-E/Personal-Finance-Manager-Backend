@@ -6,7 +6,7 @@ import { createNotification } from "../utils/notify.js";
 
 cron.schedule("0 * * * *", async () => {
   try {
-    console.log("⏳ Running budget usage notification cron...");
+    console.log(" Running budget usage notification cron...");
 
     const budgets = await Budget.find({});
     const expenses = await Expense.find({});

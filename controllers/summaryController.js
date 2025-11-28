@@ -3,16 +3,16 @@ import Expense from "../models/Expense.js";
 
 export const getSummary = async (req, res) => {
   try {
-    const userId = req.user._id; // ✅ FIX: use _id instead of id
+    const userId = req.user._id; 
 
-    // ✅ Fetch user budgets and expenses
+    //  Fetch user budgets and expenses
     const budgets = await Budget.find({ user: userId });
     const expenses = await Expense.find({ user: userId });
 
     let totalBudget = 0;
     let totalSpent = 0;
 
-    // ✅ Safe summary data for dashboard
+    // Safe summary data for dashboard
     const categories = budgets.map(budget => {
       const spent = expenses
         .filter(exp => exp.category === budget.category)
@@ -32,7 +32,7 @@ export const getSummary = async (req, res) => {
       };
     });
 
-    // ✅ Response shape matches frontend SummaryPage.jsx
+    // Response shape matches frontend SummaryPage.jsx
     res.json({
       totalBudget,
       totalSpent,
