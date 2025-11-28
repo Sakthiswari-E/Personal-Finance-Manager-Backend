@@ -22,7 +22,7 @@ import Settings from "./models/Settings.js";
 // Start Notification Cron Jobs
 import "./cron/notificationCron.js";
 import "./cron/budgetNotificationCron.js";
-import "./crons/goalNotificationCron.js";
+import "./cron/goalNotificationCron.js";
 
 const app = express();
 
