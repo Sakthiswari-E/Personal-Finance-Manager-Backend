@@ -35,7 +35,10 @@ export const getSummary = async (req, res) => {
     const filter = getUserFilter(req);
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
-    const { start, end } = parseDateRange(req.query.startDate, req.query.endDate);
+    const { start, end } = parseDateRange(
+      req.query.startDate,
+      req.query.endDate
+    );
     if (start || end) {
       filter.date = {};
       if (start) filter.date.$gte = start;
@@ -48,7 +51,6 @@ export const getSummary = async (req, res) => {
     ]);
     const totalExpenses = totalAgg[0]?.total || 0;
 
-    
     const now = new Date();
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const trendAgg = await Expense.aggregate([
@@ -82,7 +84,10 @@ export const getSummary = async (req, res) => {
       amount: c.total,
     }));
 
-    const recentDocs = await Expense.find(filter).sort({ date: -1 }).limit(5).lean();
+    const recentDocs = await Expense.find(filter)
+      .sort({ date: -1 })
+      .limit(5)
+      .lean();
     const items = recentDocs.map((r) => ({
       id: r._id,
       date: r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
@@ -91,20 +96,30 @@ export const getSummary = async (req, res) => {
       amount: r.amount,
     }));
 
-    res.json({ summary: { totalExpenses }, trend, byCategory, items });
+    // res.json({ summary: { totalExpenses }, trend, byCategory, items });
+    res.json({
+      summary: {
+        totalExpenses,
+        dailyTrend: trend,
+        byCategory,
+        items,
+      },
+    });
   } catch (err) {
     console.error("getSummary error:", err);
     res.status(500).json({ error: "Failed to fetch summary" });
   }
 };
 
-
 export const getExpenseReport = async (req, res) => {
   try {
     const filter = getUserFilter(req);
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
-    const { start, end } = parseDateRange(req.query.startDate, req.query.endDate);
+    const { start, end } = parseDateRange(
+      req.query.startDate,
+      req.query.endDate
+    );
     if (start || end) {
       filter.date = {};
       if (start) filter.date.$gte = start;
@@ -112,7 +127,10 @@ export const getExpenseReport = async (req, res) => {
     }
     if (req.query.category) filter.category = req.query.category;
 
-    const items = await Expense.find(filter).sort({ date: -1 }).limit(100).lean();
+    const items = await Expense.find(filter)
+      .sort({ date: -1 })
+      .limit(100)
+      .lean();
 
     const byCategoryAgg = await Expense.aggregate([
       { $match: filter },
@@ -125,12 +143,16 @@ export const getExpenseReport = async (req, res) => {
     }));
 
     const now = new Date();
-    const startDate = start || new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+    const startDate =
+      start || new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
     startDate.setHours(0, 0, 0, 0);
     const endDate = end || new Date();
     endDate.setHours(23, 59, 59, 999);
 
-    const matchForDaily = { ...filter, date: { $gte: startDate, $lte: endDate } };
+    const matchForDaily = {
+      ...filter,
+      date: { $gte: startDate, $lte: endDate },
+    };
     const dailyAgg = await Expense.aggregate([
       { $match: matchForDaily },
       {
@@ -179,7 +201,15 @@ export const getBudgetReport = async (req, res) => {
       } else {
         // monthly (default)
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        endDate = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999
+        );
       }
 
       const match = {
@@ -199,7 +229,9 @@ export const getBudgetReport = async (req, res) => {
     const result = budgets.map((b) => {
       const spent = spentMap[b.category] || 0;
       const remaining = Math.max(0, b.amount - spent);
-      const percentUsed = b.amount ? Math.min(100, Math.round((spent / b.amount) * 100)) : 0;
+      const percentUsed = b.amount
+        ? Math.min(100, Math.round((spent / b.amount) * 100))
+        : 0;
 
       return {
         _id: b._id,
