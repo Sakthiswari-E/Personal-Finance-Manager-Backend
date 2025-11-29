@@ -21,7 +21,6 @@ const SettingsSchema = new mongoose.Schema(
       default: "dark",
     },
     notifications: {
-      emailUpdates: { type: Boolean, default: true },
       budgetAlerts: { type: Boolean, default: true },
     },
   },

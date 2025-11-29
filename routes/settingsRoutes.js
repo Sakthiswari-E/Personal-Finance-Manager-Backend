@@ -16,7 +16,7 @@ router.get("/", protect, async (req, res) => {
         currency: "INR",
         language: "en",
         theme: "dark",
-        notifications: { emailUpdates: true, budgetAlerts: true }
+        notifications: { budgetAlerts: true }
       });
     }
 
