@@ -115,18 +115,34 @@ export const getSummary = async (req, res) => {
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
     // -----------------------------------------------------
+    // APPLY DATE RANGE FILTER (IMPORTANT!)
+    // -----------------------------------------------------
+    const { start, end } = parseDateRange(
+      req.query.startDate,
+      req.query.endDate
+    );
+
+    if (start || end) {
+      filter.date = {};
+      if (start) filter.date.$gte = start;
+      if (end) filter.date.$lte = end;
+    }
+
+    // -----------------------------------------------------
     // TOTAL EXPENSES
     // -----------------------------------------------------
     const totalAgg = await Expense.aggregate([
       { $match: filter },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
+
     const totalExpenses = totalAgg[0]?.total || 0;
 
     // -----------------------------------------------------
-    // DAILY EXPENSE TREND (last 6 months)
+    // DAILY EXPENSE TREND (last 6 months or filtered)
     // -----------------------------------------------------
     const now = new Date();
+
     const sixMonthsAgo = new Date(
       now.getFullYear(),
       now.getMonth() - 5,
@@ -134,13 +150,13 @@ export const getSummary = async (req, res) => {
     );
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
+    const trendMatch = {
+      ...filter,
+      date: filter.date || { $gte: sixMonthsAgo } // if user did NOT select range → use last 6 months
+    };
+
     const trendAgg = await Expense.aggregate([
-      {
-        $match: {
-          ...filter,
-          date: { $gte: sixMonthsAgo },
-        },
-      },
+      { $match: trendMatch },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
@@ -150,14 +166,17 @@ export const getSummary = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // Map results
     const trendMap = {};
     trendAgg.forEach((t) => (trendMap[t._id] = t.total));
 
     const dailyTrend = [];
-    let cur = new Date(sixMonthsAgo);
+    let cur = filter.date?.$gte || sixMonthsAgo;
+    let endDate = filter.date?.$lte || now;
 
-    while (cur <= now) {
+    cur = new Date(cur);
+    endDate = new Date(endDate);
+
+    while (cur <= endDate) {
       const key = cur.toISOString().slice(0, 10);
       dailyTrend.push({
         date: key,
@@ -167,7 +186,7 @@ export const getSummary = async (req, res) => {
     }
 
     // -----------------------------------------------------
-    // CATEGORY SUMMARY (Pie Chart)
+    // CATEGORY SUMMARY
     // -----------------------------------------------------
     const categoriesAgg = await Expense.aggregate([
       { $match: filter },
@@ -207,6 +226,7 @@ export const getSummary = async (req, res) => {
         items,
       },
     });
+
   } catch (err) {
     console.error("getSummary error:", err);
     res.status(500).json({ error: "Failed to fetch summary" });
