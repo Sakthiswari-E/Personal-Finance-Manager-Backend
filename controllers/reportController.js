@@ -35,87 +35,132 @@ function parseDateRange(startQ, endQ) {
 //     const filter = getUserFilter(req);
 //     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
+//     // -----------------------------------------------------
+//     // APPLY DATE RANGE FILTER (IMPORTANT!)
+//     // -----------------------------------------------------
 //     const { start, end } = parseDateRange(
 //       req.query.startDate,
 //       req.query.endDate
 //     );
+
 //     if (start || end) {
 //       filter.date = {};
 //       if (start) filter.date.$gte = start;
 //       if (end) filter.date.$lte = end;
 //     }
 
+//     // -----------------------------------------------------
+//     // TOTAL EXPENSES
+//     // -----------------------------------------------------
 //     const totalAgg = await Expense.aggregate([
 //       { $match: filter },
 //       { $group: { _id: null, total: { $sum: "$amount" } } },
 //     ]);
+
 //     const totalExpenses = totalAgg[0]?.total || 0;
 
+//     // -----------------------------------------------------
+//     // DAILY EXPENSE TREND (last 6 months or filtered)
+//     // -----------------------------------------------------
 //     const now = new Date();
-//     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+//     const sixMonthsAgo = new Date(
+//       now.getFullYear(),
+//       now.getMonth() - 5,
+//       now.getDate()
+//     );
+//     sixMonthsAgo.setHours(0, 0, 0, 0);
+
+//     const trendMatch = {
+//       ...filter,
+//       date: filter.date || { $gte: sixMonthsAgo } // if user did NOT select range → use last 6 months
+//     };
+
 //     const trendAgg = await Expense.aggregate([
-//       { $match: { ...filter, date: { $gte: sixMonthsAgo } } },
+//       { $match: trendMatch },
 //       {
 //         $group: {
-//           _id: { $dateToString: { format: "%Y-%m", date: "$date" } },
+//           _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
 //           total: { $sum: "$amount" },
 //         },
 //       },
 //       { $sort: { _id: 1 } },
 //     ]);
 
-//     const months = [];
-//     for (let i = 5; i >= 0; i--) {
-//       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-//       const mm = String(d.getMonth() + 1).padStart(2, "0");
-//       months.push(`${d.getFullYear()}-${mm}`);
-//     }
 //     const trendMap = {};
 //     trendAgg.forEach((t) => (trendMap[t._id] = t.total));
-//     const trend = months.map((m) => ({ date: m, total: trendMap[m] || 0 }));
 
+//     const dailyTrend = [];
+//     let cur = filter.date?.$gte || sixMonthsAgo;
+//     let endDate = filter.date?.$lte || now;
+
+//     cur = new Date(cur);
+//     endDate = new Date(endDate);
+
+//     while (cur <= endDate) {
+//       const key = cur.toISOString().slice(0, 10);
+//       dailyTrend.push({
+//         date: key,
+//         total: trendMap[key] || 0,
+//       });
+//       cur.setDate(cur.getDate() + 1);
+//     }
+
+//     // -----------------------------------------------------
+//     // CATEGORY SUMMARY
+//     // -----------------------------------------------------
 //     const categoriesAgg = await Expense.aggregate([
 //       { $match: filter },
 //       { $group: { _id: "$category", total: { $sum: "$amount" } } },
 //       { $sort: { total: -1 } },
 //     ]);
+
 //     const byCategory = categoriesAgg.map((c) => ({
 //       category: c._id || "Uncategorized",
 //       amount: c.total,
 //     }));
 
+//     // -----------------------------------------------------
+//     // RECENT TRANSACTIONS
+//     // -----------------------------------------------------
 //     const recentDocs = await Expense.find(filter)
 //       .sort({ date: -1 })
 //       .limit(5)
 //       .lean();
+
 //     const items = recentDocs.map((r) => ({
 //       id: r._id,
-//       date: r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
+//       date: r.date ? r.date.toISOString().slice(0, 10) : "",
 //       category: r.category,
 //       description: r.description || "",
 //       amount: r.amount,
 //     }));
 
+//     // -----------------------------------------------------
+//     // SEND RESPONSE
+//     // -----------------------------------------------------
 //     res.json({
 //       summary: {
 //         totalExpenses,
-//         dailyTrend: trend,
+//         dailyTrend,
 //         byCategory,
 //         items,
 //       },
 //     });
+
 //   } catch (err) {
 //     console.error("getSummary error:", err);
 //     res.status(500).json({ error: "Failed to fetch summary" });
 //   }
 // };
+
 export const getSummary = async (req, res) => {
   try {
     const filter = getUserFilter(req);
     if (!filter) return res.status(401).json({ error: "Unauthorized" });
 
     // -----------------------------------------------------
-    // APPLY DATE RANGE FILTER (IMPORTANT!)
+    // DATE RANGE FILTER
     // -----------------------------------------------------
     const { start, end } = parseDateRange(
       req.query.startDate,
@@ -139,10 +184,10 @@ export const getSummary = async (req, res) => {
     const totalExpenses = totalAgg[0]?.total || 0;
 
     // -----------------------------------------------------
-    // DAILY EXPENSE TREND (last 6 months or filtered)
+    // EXPENSE TREND (Fix: return ONLY real dates)
     // -----------------------------------------------------
-    const now = new Date();
 
+    const now = new Date();
     const sixMonthsAgo = new Date(
       now.getFullYear(),
       now.getMonth() - 5,
@@ -152,7 +197,7 @@ export const getSummary = async (req, res) => {
 
     const trendMatch = {
       ...filter,
-      date: filter.date || { $gte: sixMonthsAgo } // if user did NOT select range → use last 6 months
+      date: filter.date || { $gte: sixMonthsAgo }
     };
 
     const trendAgg = await Expense.aggregate([
@@ -166,24 +211,11 @@ export const getSummary = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    const trendMap = {};
-    trendAgg.forEach((t) => (trendMap[t._id] = t.total));
-
-    const dailyTrend = [];
-    let cur = filter.date?.$gte || sixMonthsAgo;
-    let endDate = filter.date?.$lte || now;
-
-    cur = new Date(cur);
-    endDate = new Date(endDate);
-
-    while (cur <= endDate) {
-      const key = cur.toISOString().slice(0, 10);
-      dailyTrend.push({
-        date: key,
-        total: trendMap[key] || 0,
-      });
-      cur.setDate(cur.getDate() + 1);
-    }
+    // FIXED TREND — Only actual expense days
+    const dailyTrend = trendAgg.map(t => ({
+      date: t._id,
+      total: t.total,
+    }));
 
     // -----------------------------------------------------
     // CATEGORY SUMMARY
@@ -216,7 +248,7 @@ export const getSummary = async (req, res) => {
     }));
 
     // -----------------------------------------------------
-    // SEND RESPONSE
+    // RESPONSE
     // -----------------------------------------------------
     res.json({
       summary: {
@@ -232,6 +264,7 @@ export const getSummary = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch summary" });
   }
 };
+
 
 export const getExpenseReport = async (req, res) => {
   try {
