@@ -197,7 +197,7 @@ export const getSummary = async (req, res) => {
 
     const trendMatch = {
       ...filter,
-      date: filter.date || { $gte: sixMonthsAgo }
+      date: filter.date || { $gte: sixMonthsAgo },
     };
 
     const trendAgg = await Expense.aggregate([
@@ -211,10 +211,22 @@ export const getSummary = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // FIXED TREND — Only actual expense days
-    const dailyTrend = trendAgg.map(t => ({
-      date: t._id,
-      total: t.total,
+    const monthlyAgg = await Expense.aggregate([
+      { $match: trendMatch },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m", date: "$date" },
+          },
+          total: { $sum: "$amount" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const monthlyTrend = monthlyAgg.map((m) => ({
+      month: m._id, // format: "2024-11"
+      total: m.total,
     }));
 
     // -----------------------------------------------------
@@ -253,18 +265,16 @@ export const getSummary = async (req, res) => {
     res.json({
       summary: {
         totalExpenses,
-        dailyTrend,
+        monthlyTrend,
         byCategory,
         items,
       },
     });
-
   } catch (err) {
     console.error("getSummary error:", err);
     res.status(500).json({ error: "Failed to fetch summary" });
   }
 };
-
 
 export const getExpenseReport = async (req, res) => {
   try {
