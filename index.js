@@ -1,6 +1,22 @@
-//backend\index.js
+// //backend\index.js
+// import dotenv from "dotenv";
+// dotenv.config();
+
+// import express from "express";
+// import mongoose from "mongoose";
+// import cors from "cors";
+// import cookieParser from "cookie-parser";
+
+
+// backend/index.js
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 import express from "express";
 import mongoose from "mongoose";
@@ -29,8 +45,12 @@ const app = express();
 // Environment Variables
 const DEV_MODE = process.env.DEV_MODE === "true";
 const PORT = process.env.PORT || 5002;
-const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://127.0.0.1:27017/personal_finance_db";
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI is missing. Check your .env file.");
+  process.exit(1);
+}
+
 
 // Global Middleware
 app.use(express.json());
