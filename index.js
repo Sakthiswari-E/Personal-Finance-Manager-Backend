@@ -31,6 +31,7 @@ import reportRoutes from "./routes/reports.js";
 import goalRoutes from "./routes/goals.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import incomeRoutes from "./routes/incomeRoutes.js";
 
 import errorHandler from "./middleware/errorHandler.js";
 import Settings from "./models/Settings.js";
@@ -88,7 +89,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
-
+app.use("/api/income", incomeRoutes);
 // Error Handler
 app.use(errorHandler);
 
