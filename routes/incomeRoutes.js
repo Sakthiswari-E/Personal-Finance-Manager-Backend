@@ -1,4 +1,3 @@
-//Backend\routes\incomeRoutes.js
 import express from "express";
 import {
   getIncome,
@@ -8,16 +7,16 @@ import {
   incomeSummary,
   monthlyIncome,
 } from "../controllers/incomeController.js";
-import auth from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", auth, getIncome);
-router.post("/", auth, addIncome);
-router.put("/:id", auth, updateIncome);
-router.delete("/:id", auth, deleteIncome);
+router.get("/", protect, getIncome);
+router.post("/", protect, addIncome);
+router.put("/:id", protect, updateIncome);
+router.delete("/:id", protect, deleteIncome);
 
-router.get("/summary", auth, incomeSummary);
-router.get("/monthly", auth, monthlyIncome);
+router.get("/summary", protect, incomeSummary);
+router.get("/monthly", protect, monthlyIncome);
 
-export default auth;
+export default router;
