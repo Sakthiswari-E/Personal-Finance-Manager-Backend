@@ -89,58 +89,84 @@
 
 
 
-
-
-
+// Backend/controllers/incomeController.js
 import Income from "../models/Income.js";
 
 /* ✅ GET ALL INCOME */
 export const getIncome = async (req, res) => {
   try {
-    const income = await Income.find({ user: req.user.id }).sort({ date: -1 });
-    res.json(income);
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const income = await Income.find({ user: req.user._id })
+      .sort({ date: -1 });
+
+    res.status(200).json(income);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("GET INCOME ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch income" });
   }
 };
 
 /* ✅ ADD INCOME */
 export const addIncome = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const income = await Income.create({
-      user: req.user.id,
+      user: req.user._id,
       source: req.body.source,
       amount: req.body.amount,
       date: req.body.date,
       note: req.body.note,
     });
+
     res.status(201).json(income);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error("ADD INCOME ERROR:", err);
+    res.status(400).json({ message: "Failed to add income" });
   }
 };
 
-/* ✅ UPDATE INCOME */
+/* ✅ UPDATE INCOME (OWNER ONLY) */
 export const updateIncome = async (req, res) => {
   try {
-    const income = await Income.findByIdAndUpdate(
-      req.params.id,
+    const income = await Income.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
       req.body,
       { new: true }
     );
+
+    if (!income) {
+      return res.status(404).json({ message: "Income not found" });
+    }
+
     res.json(income);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error("UPDATE INCOME ERROR:", err);
+    res.status(400).json({ message: "Failed to update income" });
   }
 };
 
-/* ✅ DELETE INCOME */
+/* ✅ DELETE INCOME (OWNER ONLY) */
 export const deleteIncome = async (req, res) => {
   try {
-    await Income.findByIdAndDelete(req.params.id);
-    res.json({ message: "Income deleted" });
+    const income = await Income.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+
+    if (!income) {
+      return res.status(404).json({ message: "Income not found" });
+    }
+
+    res.json({ message: "Income deleted successfully" });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error("DELETE INCOME ERROR:", err);
+    res.status(400).json({ message: "Failed to delete income" });
   }
 };
 
@@ -151,9 +177,11 @@ export const incomeSummary = async (req, res) => {
       { $match: { user: req.user._id } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
+
     res.json({ totalIncome: summary[0]?.total || 0 });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("INCOME SUMMARY ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch income summary" });
   }
 };
 
@@ -168,11 +196,12 @@ export const monthlyIncome = async (req, res) => {
           total: { $sum: "$amount" },
         },
       },
-      { $sort: { "_id": 1 } },
+      { $sort: { _id: 1 } },
     ]);
 
     res.json(trend);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("MONTHLY INCOME ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch monthly income" });
   }
 };
