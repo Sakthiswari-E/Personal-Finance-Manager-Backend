@@ -1,13 +1,3 @@
-// //backend\index.js
-// import dotenv from "dotenv";
-// dotenv.config();
-
-// import express from "express";
-// import mongoose from "mongoose";
-// import cors from "cors";
-// import cookieParser from "cookie-parser";
-
-
 // backend/index.js
 import dotenv from "dotenv";
 import path from "path";
@@ -54,8 +44,6 @@ if (!MONGO_URI) {
 
 
 // Global Middleware
-app.use(express.json());
-app.use(cookieParser());
 app.use(
   cors({
     origin: [
@@ -63,11 +51,15 @@ app.use(
       "http://localhost:5173",
       "https://personal-finance-manager-frontend-3jfx.onrender.com"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
+// 🔥 THIS LINE IS VERY IMPORTANT
+app.options("*", cors());
+
 
 // Root Route
 app.get("/", (req, res) => {
