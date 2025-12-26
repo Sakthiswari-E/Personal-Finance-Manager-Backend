@@ -1,4 +1,4 @@
-// backend/index.js
+ // backend/index.js
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -44,6 +44,8 @@ if (!MONGO_URI) {
 
 
 // Global Middleware
+app.use(express.json());
+app.use(cookieParser());
 app.use(
   cors({
     origin: [
@@ -51,15 +53,11 @@ app.use(
       "http://localhost:5173",
       "https://personal-finance-manager-frontend-3jfx.onrender.com"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
-
-// 🔥 THIS LINE IS VERY IMPORTANT
-app.options("*", cors());
-
 
 // Root Route
 app.get("/", (req, res) => {
