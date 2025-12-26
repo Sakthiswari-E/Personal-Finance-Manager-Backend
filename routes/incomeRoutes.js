@@ -11,12 +11,13 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getIncome);
-router.post("/", addIncome);
-router.put("/:id", updateIncome);
-router.delete("/:id", deleteIncome);
+// PROTECTED ROUTES
+router.get("/", protect, getIncome);
+router.post("/", protect, addIncome);
+router.put("/:id", protect, updateIncome);
+router.delete("/:id", protect, deleteIncome);
 
-router.get("/summary", incomeSummary);
-router.get("/monthly", monthlyIncome);
+router.get("/summary", protect, incomeSummary);
+router.get("/monthly", protect, monthlyIncome);
 
 export default router;
