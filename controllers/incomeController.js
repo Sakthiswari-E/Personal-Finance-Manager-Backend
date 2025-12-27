@@ -258,34 +258,43 @@ export const addIncome = async (req, res) => {
     res.status(400).json({ message: "Failed to add income" });
   }
 };
-
-/* ================================
-   ✅ UPDATE INCOME (OWNER ONLY)
-================================ */
+// UPDATE INCOME
 export const updateIncome = async (req, res) => {
   try {
+    const { category, amount, date, description } = req.body;
+
+    if (!req.params.id) {
+      return res.status(400).json({ message: "Income ID is required" });
+    }
+
     const income = await Income.findOneAndUpdate(
       {
         _id: req.params.id,
-        user: req.user._id,
+        user: req.user._id, // ensures only owner can update
       },
       {
-        category: req.body.category,
-        amount: req.body.amount,
-        date: req.body.date,
-        description: req.body.description,
+        category,
+        amount,
+        date,
+        description,
       },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!income) {
       return res.status(404).json({ message: "Income not found" });
     }
 
-    res.status(200).json(income);
-  } catch (err) {
-    console.error("UPDATE INCOME ERROR:", err);
-    res.status(400).json({ message: "Failed to update income" });
+    res.status(200).json({
+      message: "Income updated successfully",
+      income,
+    });
+  } catch (error) {
+    console.error("UPDATE INCOME ERROR:", error);
+    res.status(500).json({ message: "Failed to update income" });
   }
 };
 
