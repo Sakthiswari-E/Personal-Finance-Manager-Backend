@@ -37,6 +37,38 @@
 
 
 
+// //Backend\models\Income.js
+// import mongoose from "mongoose";
+
+// const incomeSchema = new mongoose.Schema(
+//   {
+//     user: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true,
+//     },
+//     source: {
+//       type: String,
+//       required: true, // Salary, Freelance, Business
+//     },
+//     amount: {
+//       type: Number,
+//       required: true,
+//     },
+//     date: {
+//       type: Date,
+//       default: Date.now,
+//     },
+//     note: {
+//       type: String,
+//     },
+//   },
+//   { timestamps: true }
+// );
+
+// export default mongoose.model("Income", incomeSchema);
+
+
 
 import mongoose from "mongoose";
 
@@ -47,9 +79,9 @@ const incomeSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    source: {
+    category: {
       type: String,
-      required: true, // Salary, Freelance, Business
+      required: true,
     },
     amount: {
       type: Number,
@@ -57,9 +89,9 @@ const incomeSchema = new mongoose.Schema(
     },
     date: {
       type: Date,
-      default: Date.now,
+      required: true,
     },
-    note: {
+    description: {
       type: String,
     },
   },
