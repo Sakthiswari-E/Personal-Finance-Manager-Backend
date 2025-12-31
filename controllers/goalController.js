@@ -873,10 +873,27 @@ import Notification from "../models/Notification.js";
 ================================ */
 export const createOrAddGoal = async (req, res) => {
   try {
-    const { name, target, addAmount = 0, category } = req.body;
+    const { name, target, addAmount, category } = req.body;
 
-    if (!name || !target) {
-      return res.status(400).json({ message: "Name and target are required" });
+    if (!name || target === undefined) {
+      return res.status(400).json({
+        message: "Name and target are required"
+      });
+    }
+
+    // 🔥 SAFELY PARSE NUMBERS
+    const parsedTarget = Number(target);
+    const parsedAddAmount =
+      addAmount !== undefined && addAmount !== ""
+        ? Number(addAmount)
+        : 0;
+
+    if (isNaN(parsedTarget) || parsedTarget <= 0) {
+      return res.status(400).json({ message: "Invalid target amount" });
+    }
+
+    if (isNaN(parsedAddAmount) || parsedAddAmount < 0) {
+      return res.status(400).json({ message: "Invalid add amount" });
     }
 
     const nameNormalized = name.trim().toLowerCase();
@@ -888,17 +905,17 @@ export const createOrAddGoal = async (req, res) => {
 
     // ✅ EXISTING GOAL → ADD AMOUNT
     if (goal) {
-      goal.saved += Number(addAmount || 0);
+      goal.saved = Number(goal.saved) + parsedAddAmount;
       await goal.save();
       return res.json(goal);
     }
 
-    // ✅ NEW GOAL → saved = addAmount
+    // ✅ NEW GOAL → FIRST TIME ADD WORKS HERE
     goal = await Goal.create({
       user: req.user._id,
       name,
-      target,
-      saved: Number(addAmount || 0),
+      target: parsedTarget,
+      saved: parsedAddAmount,
       category
     });
 
