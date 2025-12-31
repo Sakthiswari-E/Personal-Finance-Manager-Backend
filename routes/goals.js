@@ -85,34 +85,80 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// router.post("/", protect, async (req, res) => {
+//   try {
+//     const { name, target, category, startDate, endDate } = req.body;
+
+//     if (!name || !target) {
+//       return res
+//         .status(400)
+//         .json({ message: "Name and target amount are required" });
+//     }
+
+//     const goal = await Goal.create({
+//       user: req.user._id,
+//       name,
+//       target,
+//       category,
+//       startDate,
+//       endDate,
+//       notified50: false,
+//       notified80: false,
+//       completedNotified: false,
+//     });
+
+//     res.status(201).json(goal);
+//   } catch (err) {
+//     console.error("❌ Error creating goal:", err);
+//     res.status(500).json({ message: "Server error creating goal" });
+//   }
+// });
 router.post("/", protect, async (req, res) => {
   try {
-    const { name, target, category, startDate, endDate } = req.body;
+    const { name, target, saved = 0, category, startDate, endDate } = req.body;
 
     if (!name || !target) {
-      return res
-        .status(400)
-        .json({ message: "Name and target amount are required" });
+      return res.status(400).json({ message: "Name and target are required" });
     }
 
-    const goal = await Goal.create({
+    const nameNormalized = name.trim().toLowerCase();
+
+    // 🔍 Check existing goal with same name
+    let goal = await Goal.findOne({
+      user: req.user._id,
+      nameNormalized
+    });
+
+    if (goal) {
+      // ✅ ADD saved amount instead of creating new card
+      goal.saved += Number(saved || 0);
+
+      // Optionally update target if changed
+      if (target) goal.target = target;
+
+      await goal.save();
+      return res.json(goal);
+    }
+
+    // 🆕 Create new goal
+    goal = await Goal.create({
       user: req.user._id,
       name,
+      nameNormalized,
       target,
+      saved,
       category,
       startDate,
       endDate,
-      notified50: false,
-      notified80: false,
-      completedNotified: false,
     });
 
     res.status(201).json(goal);
   } catch (err) {
-    console.error("❌ Error creating goal:", err);
-    res.status(500).json({ message: "Server error creating goal" });
+    console.error("❌ Goal create error:", err);
+    res.status(500).json({ message: err.message });
   }
 });
+
 
 router.put("/:id", protect, async (req, res) => {
   try {

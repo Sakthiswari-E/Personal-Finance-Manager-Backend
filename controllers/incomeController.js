@@ -214,7 +214,7 @@
 
 // Backend/controllers/incomeController.js
 import Income from "../models/Income.js";
-
+import mongoose from "mongoose";
 /* ================================
    ✅ GET ALL INCOME
 ================================ */
@@ -258,67 +258,44 @@ export const addIncome = async (req, res) => {
     res.status(400).json({ message: "Failed to add income" });
   }
 };
-// UPDATE INCOME
 export const updateIncome = async (req, res) => {
-  try {
-    const { category, amount, date, description } = req.body;
+  const { id } = req.params;
 
-    if (!req.params.id) {
-      return res.status(400).json({ message: "Income ID is required" });
-    }
-
-    const income = await Income.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        user: req.user._id, // ensures only owner can update
-      },
-      {
-        category,
-        amount,
-        date,
-        description,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!income) {
-      return res.status(404).json({ message: "Income not found" });
-    }
-
-    res.status(200).json({
-      message: "Income updated successfully",
-      income,
-    });
-  } catch (error) {
-    console.error("UPDATE INCOME ERROR:", error);
-    res.status(500).json({ message: "Failed to update income" });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid income ID" });
   }
+
+  const income = await Income.findOneAndUpdate(
+    { _id: id, user: req.user._id },
+    req.body,
+    { new: true }
+  );
+
+  if (!income) {
+    return res.status(404).json({ message: "Income not found" });
+  }
+
+  res.json(income);
 };
 
-/* ================================
-   ✅ DELETE INCOME (OWNER ONLY)
-================================ */
 export const deleteIncome = async (req, res) => {
-  try {
-    const income = await Income.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user._id,
-    });
+  const { id } = req.params;
 
-    if (!income) {
-      return res.status(404).json({ message: "Income not found" });
-    }
-
-    res.status(200).json({ message: "Income deleted successfully" });
-  } catch (err) {
-    console.error("DELETE INCOME ERROR:", err);
-    res.status(400).json({ message: "Failed to delete income" });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid income ID" });
   }
-};
 
+  const income = await Income.findOneAndDelete({
+    _id: id,
+    user: req.user._id,
+  });
+
+  if (!income) {
+    return res.status(404).json({ message: "Income not found" });
+  }
+
+  res.json({ message: "Income deleted successfully" });
+};
 /* ================================
    ✅ INCOME SUMMARY
 ================================ */
