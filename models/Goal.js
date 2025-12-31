@@ -92,7 +92,177 @@
 
 
 
-//Backend\models\Goal.js
+// //Backend\models\Goal.js
+// import mongoose from "mongoose";
+
+// const goalSchema = new mongoose.Schema(
+//   {
+//     user: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true,
+//     },
+
+//     name: { type: String, required: true, trim: true },
+//     nameNormalized: { type: String, required: true, index: true },
+
+//     target: { type: Number, required: true, min: 0 },
+//     saved: { type: Number, default: 0, min: 0 },
+
+//     category: { type: String, trim: true },
+//     startDate: { type: Date, default: Date.now },
+//     endDate: { type: Date },
+
+//     notified50: { type: Boolean, default: false },
+//     notified80: { type: Boolean, default: false },
+//     completedNotified: { type: Boolean, default: false },
+//   },
+//   { timestamps: true }
+// );
+
+// goalSchema.index({ user: 1, nameNormalized: 1 }, { unique: true });
+
+// export default mongoose.model("Goal", goalSchema);
+
+
+
+// import mongoose from "mongoose";
+
+// const goalSchema = new mongoose.Schema(
+//   {
+//     user: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true
+//     },
+
+//     name: {
+//       type: String,
+//       required: true,
+//       trim: true
+//     },
+
+//     nameNormalized: {
+//       type: String,
+//       required: true,
+//       index: true
+//     },
+
+//     target: {
+//       type: Number,
+//       required: true,
+//       min: 0
+//     },
+
+//     saved: {
+//       type: Number,
+//       default: 0,
+//       min: 0
+//     },
+
+//     category: {
+//       type: String,
+//       trim: true
+//     },
+
+//     startDate: {
+//       type: Date,
+//       default: Date.now
+//     },
+
+//     endDate: {
+//       type: Date
+//     },
+
+//     notified50: { type: Boolean, default: false },
+//     notified80: { type: Boolean, default: false },
+//     completedNotified: { type: Boolean, default: false }
+//   },
+//   { timestamps: true }
+// );
+
+// /* 🔥 AUTO-GENERATE nameNormalized */
+// goalSchema.pre("validate", function (next) {
+//   if (this.name) {
+//     this.nameNormalized = this.name.trim().toLowerCase();
+//   }
+//   next();
+// });
+
+// /* Unique goal per user */
+// goalSchema.index({ user: 1, nameNormalized: 1 }, { unique: true });
+
+// export default mongoose.model("Goal", goalSchema);
+
+
+// // Backend/models/Goal.js
+// import mongoose from "mongoose";
+
+// const goalSchema = new mongoose.Schema(
+//   {
+//     user: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true
+//     },
+
+//     name: {
+//       type: String,
+//       required: true,
+//       trim: true
+//     },
+
+//     // 🔥 Auto-used to prevent duplicate goals
+//     nameNormalized: {
+//       type: String,
+//       required: true,
+//       index: true
+//     },
+
+//     targetAmount: {
+//       type: Number,
+//       required: true,
+//       min: 0
+//     },
+
+//     savedAmount: {
+//       type: Number,
+//       default: 0,
+//       min: 0
+//     },
+
+//     category: {
+//       type: String,
+//       trim: true
+//     },
+
+//     notified50: { type: Boolean, default: false },
+//     notified80: { type: Boolean, default: false },
+//     completedNotified: { type: Boolean, default: false }
+//   },
+//   { timestamps: true }
+// );
+
+// /* 🔥 AUTO GENERATE nameNormalized */
+// goalSchema.pre("validate", function (next) {
+//   if (this.name) {
+//     this.nameNormalized = this.name.trim().toLowerCase();
+//   }
+//   next();
+// });
+
+// /* 🔐 Prevent duplicate goals per user */
+// goalSchema.index({ user: 1, nameNormalized: 1 }, { unique: true });
+
+// export default mongoose.model("Goal", goalSchema);
+
+
+
+
+
+
+
+// Backend/models/Goal.js
 import mongoose from "mongoose";
 
 const goalSchema = new mongoose.Schema(
@@ -100,26 +270,54 @@ const goalSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: true
     },
 
-    name: { type: String, required: true, trim: true },
-    nameNormalized: { type: String, required: true, index: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
-    target: { type: Number, required: true, min: 0 },
-    saved: { type: Number, default: 0, min: 0 },
+    nameNormalized: {
+      type: String,
+      required: true,
+      index: true
+    },
 
-    category: { type: String, trim: true },
-    startDate: { type: Date, default: Date.now },
-    endDate: { type: Date },
+    target: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
+    saved: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    category: {
+      type: String,
+      trim: true
+    },
 
     notified50: { type: Boolean, default: false },
     notified80: { type: Boolean, default: false },
-    completedNotified: { type: Boolean, default: false },
+    completedNotified: { type: Boolean, default: false }
   },
   { timestamps: true }
 );
 
+/* 🔥 Auto generate normalized name */
+goalSchema.pre("validate", function (next) {
+  if (this.name) {
+    this.nameNormalized = this.name.trim().toLowerCase();
+  }
+  next();
+});
+
+/* 🔐 Unique goal per user */
 goalSchema.index({ user: 1, nameNormalized: 1 }, { unique: true });
 
 export default mongoose.model("Goal", goalSchema);

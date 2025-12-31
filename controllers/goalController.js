@@ -643,17 +643,237 @@
 
 
 
-//Backend\controllers\goalController.js
+// //Backend\controllers\goalController.js
+// import Goal from "../models/Goal.js";
+// import Notification from "../models/Notification.js";
+
+// export const createGoal = async (req, res) => {
+//   try {
+//     if (!req.user) {
+//       return res.status(401).json({ message: "Not authenticated" });
+//     }
+
+//     const { name, target, category, startDate, endDate } = req.body;
+
+//     if (!name || !target) {
+//       return res.status(400).json({ message: "Name and target are required" });
+//     }
+
+//     const goal = await Goal.create({
+//       user: req.user._id,
+//       name,
+//       target,
+//       category,
+//       startDate,
+//       endDate
+//       // nameNormalized handled automatically
+//     });
+
+//     res.status(201).json(goal);
+//   } catch (error) {
+//     console.error("Create goal error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+// /* ===============================
+//    GET GOALS + PROGRESS
+// ================================ */
+// export const getGoals = async (req, res) => {
+//   try {
+//     const goals = await Goal.find({ user: req.user._id }).sort({ createdAt: -1 });
+
+//     const results = await Promise.all(
+//       goals.map(async (goal) => {
+//         const percent =
+//           goal.target > 0
+//             ? Math.min(100, Math.round((goal.saved / goal.target) * 100))
+//             : 0;
+
+//         // Notifications
+//         if (percent >= 50 && !goal.notified50) {
+//           await Notification.create({
+//             userId: req.user._id,
+//             type: "goal",
+//             message: `🎯 "${goal.name}" reached 50%`,
+//           });
+//           goal.notified50 = true;
+//         }
+
+//         if (percent >= 80 && !goal.notified80) {
+//           await Notification.create({
+//             userId: req.user._id,
+//             type: "goal",
+//             message: `🔥 "${goal.name}" reached 80%`,
+//           });
+//           goal.notified80 = true;
+//         }
+
+//         if (percent === 100 && !goal.completedNotified) {
+//           await Notification.create({
+//             userId: req.user._id,
+//             type: "goal",
+//             message: `✅ "${goal.name}" completed!`,
+//           });
+//           goal.completedNotified = true;
+//         }
+
+//         await goal.save();
+
+//         return {
+//           ...goal._doc,
+//           progressPercent: percent,
+//           remaining: Math.max(0, goal.target - goal.saved),
+//         };
+//       })
+//     );
+
+//     res.json(results);
+//   } catch (err) {
+//     console.error("❌ getGoals:", err);
+//     res.status(500).json({ message: "Server error fetching goals" });
+//   }
+// };
+// export const addGoalOrAmount = async (req, res) => {
+//   try {
+//     const { name, targetAmount, addAmount = 0, category } = req.body;
+
+//     if (!name || !targetAmount) {
+//       return res.status(400).json({ message: "Name and target are required" });
+//     }
+
+//     const nameNormalized = name.trim().toLowerCase();
+
+//     // Check if goal already exists
+//     let goal = await Goal.findOne({
+//       user: req.user.id,
+//       nameNormalized
+//     });
+
+//     if (goal) {
+//       // ✅ EXISTING GOAL → ADD AMOUNT
+//       goal.savedAmount += Number(addAmount || 0);
+//       await goal.save();
+
+//       return res.json(goal);
+//     }
+
+//     // ✅ NEW GOAL → SET savedAmount = addAmount
+//     goal = await Goal.create({
+//       user: req.user.id,
+//       name,
+//       nameNormalized,
+//       targetAmount,
+//       savedAmount: Number(addAmount || 0),
+//       category
+//     });
+
+//     res.status(201).json(goal);
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+// export const addSavings = async (req, res) => {
+//   try {
+//     const { amount } = req.body;
+
+//     if (amount <= 0) {
+//       return res.status(400).json({ message: "Invalid amount" });
+//     }
+
+//     const goal = await Goal.findOne({
+//       _id: req.params.id,
+//       user: req.user._id
+//     });
+
+//     if (!goal) {
+//       return res.status(404).json({ message: "Goal not found" });
+//     }
+
+//     goal.saved += Number(amount);
+//     await goal.save(); // 🔥 now passes validation
+
+//     res.json(goal);
+//   } catch (error) {
+//     console.error("Add savings error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+// /* ===============================
+//    UPDATE GOAL
+// ================================ */
+// export const updateGoal = async (req, res) => {
+//   try {
+//     const goal = await Goal.findOne({
+//       _id: req.params.id,
+//       user: req.user._id,
+//     });
+
+//     if (!goal) {
+//       return res.status(404).json({ message: "Goal not found" });
+//     }
+
+//     if (req.body.name) {
+//       goal.name = req.body.name;
+//       goal.nameNormalized = req.body.name.trim().toLowerCase();
+//     }
+
+//     if (req.body.target !== undefined) goal.target = Number(req.body.target);
+//     if (req.body.saved !== undefined) goal.saved = Number(req.body.saved);
+//     if (req.body.category !== undefined) goal.category = req.body.category;
+//     if (req.body.startDate !== undefined) goal.startDate = req.body.startDate;
+//     if (req.body.endDate !== undefined) goal.endDate = req.body.endDate;
+
+//     await goal.save();
+//     res.json(goal);
+//   } catch (err) {
+//     console.error("❌ updateGoal:", err);
+//     res.status(500).json({ message: "Server error updating goal" });
+//   }
+// };
+
+// /* ===============================
+//    DELETE GOAL
+// ================================ */
+// export const deleteGoal = async (req, res) => {
+//   try {
+//     const deleted = await Goal.findOneAndDelete({
+//       _id: req.params.id,
+//       user: req.user._id,
+//     });
+
+//     if (!deleted) {
+//       return res.status(404).json({ message: "Goal not found" });
+//     }
+
+//     res.json({ message: "Goal deleted successfully" });
+//   } catch (err) {
+//     console.error("❌ deleteGoal:", err);
+//     res.status(500).json({ message: "Server error deleting goal" });
+//   }
+// };
+
+
+
+
+
+
+
+// Backend/controllers/goalController.js
 import Goal from "../models/Goal.js";
 import Notification from "../models/Notification.js";
 
 /* ===============================
-   CREATE GOAL
+   CREATE GOAL OR ADD AMOUNT
 ================================ */
-export const createGoal = async (req, res) => {
+export const createOrAddGoal = async (req, res) => {
   try {
-    console.log("USER:", req.user); 
-    const { name, target, category, startDate, endDate } = req.body;
+    const { name, target, addAmount = 0, category } = req.body;
 
     if (!name || !target) {
       return res.status(400).json({ message: "Name and target are required" });
@@ -661,30 +881,31 @@ export const createGoal = async (req, res) => {
 
     const nameNormalized = name.trim().toLowerCase();
 
-    const exists = await Goal.findOne({
+    let goal = await Goal.findOne({
       user: req.user._id,
-      nameNormalized,
+      nameNormalized
     });
 
-    if (exists) {
-      return res.status(400).json({ message: "Goal already exists" });
+    // ✅ EXISTING GOAL → ADD AMOUNT
+    if (goal) {
+      goal.saved += Number(addAmount || 0);
+      await goal.save();
+      return res.json(goal);
     }
 
-    const goal = await Goal.create({
+    // ✅ NEW GOAL → saved = addAmount
+    goal = await Goal.create({
       user: req.user._id,
       name,
-      nameNormalized,
       target,
-      saved: 0,
-      category,
-      startDate,
-      endDate,
+      saved: Number(addAmount || 0),
+      category
     });
 
     res.status(201).json(goal);
-  } catch (err) {
-    console.error("❌ createGoal:", err);
-    res.status(500).json({ message: "Server error creating goal" });
+  } catch (error) {
+    console.error("❌ createOrAddGoal:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -693,7 +914,9 @@ export const createGoal = async (req, res) => {
 ================================ */
 export const getGoals = async (req, res) => {
   try {
-    const goals = await Goal.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const goals = await Goal.find({ user: req.user._id }).sort({
+      createdAt: -1
+    });
 
     const results = await Promise.all(
       goals.map(async (goal) => {
@@ -702,12 +925,12 @@ export const getGoals = async (req, res) => {
             ? Math.min(100, Math.round((goal.saved / goal.target) * 100))
             : 0;
 
-        // Notifications
+        // 🔔 Notifications
         if (percent >= 50 && !goal.notified50) {
           await Notification.create({
             userId: req.user._id,
             type: "goal",
-            message: `🎯 "${goal.name}" reached 50%`,
+            message: `🎯 "${goal.name}" reached 50%`
           });
           goal.notified50 = true;
         }
@@ -716,7 +939,7 @@ export const getGoals = async (req, res) => {
           await Notification.create({
             userId: req.user._id,
             type: "goal",
-            message: `🔥 "${goal.name}" reached 80%`,
+            message: `🔥 "${goal.name}" reached 80%`
           });
           goal.notified80 = true;
         }
@@ -725,7 +948,7 @@ export const getGoals = async (req, res) => {
           await Notification.create({
             userId: req.user._id,
             type: "goal",
-            message: `✅ "${goal.name}" completed!`,
+            message: `✅ "${goal.name}" completed!`
           });
           goal.completedNotified = true;
         }
@@ -735,45 +958,15 @@ export const getGoals = async (req, res) => {
         return {
           ...goal._doc,
           progressPercent: percent,
-          remaining: Math.max(0, goal.target - goal.saved),
+          remaining: Math.max(0, goal.target - goal.saved)
         };
       })
     );
 
     res.json(results);
-  } catch (err) {
-    console.error("❌ getGoals:", err);
+  } catch (error) {
+    console.error("❌ getGoals:", error);
     res.status(500).json({ message: "Server error fetching goals" });
-  }
-};
-
-/* ===============================
-   ADD SAVINGS
-================================ */
-export const addSavings = async (req, res) => {
-  try {
-    const { amount } = req.body;
-
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: "Valid amount required" });
-    }
-
-    const goal = await Goal.findOne({
-      _id: req.params.id,
-      user: req.user._id,
-    });
-
-    if (!goal) {
-      return res.status(404).json({ message: "Goal not found" });
-    }
-
-    goal.saved += Number(amount);
-    await goal.save();
-
-    res.json(goal);
-  } catch (err) {
-    console.error("❌ addSavings:", err);
-    res.status(500).json({ message: "Server error adding savings" });
   }
 };
 
@@ -784,28 +977,22 @@ export const updateGoal = async (req, res) => {
   try {
     const goal = await Goal.findOne({
       _id: req.params.id,
-      user: req.user._id,
+      user: req.user._id
     });
 
     if (!goal) {
       return res.status(404).json({ message: "Goal not found" });
     }
 
-    if (req.body.name) {
-      goal.name = req.body.name;
-      goal.nameNormalized = req.body.name.trim().toLowerCase();
-    }
-
+    if (req.body.name) goal.name = req.body.name;
     if (req.body.target !== undefined) goal.target = Number(req.body.target);
     if (req.body.saved !== undefined) goal.saved = Number(req.body.saved);
     if (req.body.category !== undefined) goal.category = req.body.category;
-    if (req.body.startDate !== undefined) goal.startDate = req.body.startDate;
-    if (req.body.endDate !== undefined) goal.endDate = req.body.endDate;
 
     await goal.save();
     res.json(goal);
-  } catch (err) {
-    console.error("❌ updateGoal:", err);
+  } catch (error) {
+    console.error("❌ updateGoal:", error);
     res.status(500).json({ message: "Server error updating goal" });
   }
 };
@@ -817,7 +1004,7 @@ export const deleteGoal = async (req, res) => {
   try {
     const deleted = await Goal.findOneAndDelete({
       _id: req.params.id,
-      user: req.user._id,
+      user: req.user._id
     });
 
     if (!deleted) {
@@ -825,8 +1012,8 @@ export const deleteGoal = async (req, res) => {
     }
 
     res.json({ message: "Goal deleted successfully" });
-  } catch (err) {
-    console.error("❌ deleteGoal:", err);
+  } catch (error) {
+    console.error("❌ deleteGoal:", error);
     res.status(500).json({ message: "Server error deleting goal" });
   }
 };
